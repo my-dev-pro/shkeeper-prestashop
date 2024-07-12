@@ -25,10 +25,10 @@ class Shkeeper extends PaymentModule
 
         parent::__construct();
 
-        $this->displayName = $this->trans("SHkeeper", [], "Modules.Shkeeper.Shop");
-        $this->description = $this->trans("SHKeeper Cryptocurrencies Payment Gateway", [], "Modules.Shkeeper.Shop");
+        $this->displayName = $this->trans("SHkeeper", [], "Modules.Shkeeper.Admin");
+        $this->description = $this->trans("SHKeeper Cryptocurrencies Payment Gateway", [], "Modules.Shkeeper.Admin");
 
-        $this->confirmUninstall = $this->trans("Are you sure you want to uninstall?", [], "Modules.Shkeeper.Shop");
+        $this->confirmUninstall = $this->trans("Are you sure you want to uninstall?", [], "Modules.Shkeeper.Admin");
     }
 
     public function install()
@@ -61,13 +61,13 @@ class Shkeeper extends PaymentModule
             // check that the value is valid
             if (empty($configKey) || empty($configURL)) {
                 // invalid value, show an error
-                $output = $this->displayError( $this->trans("Invalid Configuration value", [], "Modules.Shkeeper.Shop" ) );
+                $output = $this->displayError( $this->trans("Invalid Configuration value", [], "Modules.Shkeeper.Admin" ) );
             } else {
                 // value is ok, update it and display a confirmation message
                 Configuration::updateValue("SHKEEPER_INSTRUCTION", $configInstruction);
                 Configuration::updateValue("SHKEEPER_APIKEY", $configKey);
                 Configuration::updateValue("SHKEEPER_APIURL", $configURL);
-                $output = $this->displayConfirmation( $this->trans("Settings updated", [], "Modules.Shkeeper.Shop" ) );
+                $output = $this->displayConfirmation( $this->trans("Settings updated", [], "Modules.Shkeeper.Admin" ) );
             }
         }
 
@@ -85,28 +85,28 @@ class Shkeeper extends PaymentModule
                 "input" => [
                     [
                         "type" => "textarea",
-                        "label" => $this->trans("Instruction", [], "Modules.Shkeeper.Shop"),
+                        "label" => $this->trans("Instruction", [], "Modules.Shkeeper.Admin"),
                         "name" => "SHKEEPER_INSTRUCTION",
                         "desc" => "Instruction for Customer",
                         "required" => false,
                     ],
                     [
                         "type" => "text",
-                        "label" => $this->trans("API Key", [], "Modules.Shkeeper.Shop"),
+                        "label" => $this->trans("API Key", [], "Modules.Shkeeper.Admin"),
                         "name" => "SHKEEPER_APIKEY",
                         "desc" => "API Key",
                         "required" => true,
                     ],
                     [
                         "type" => "text",
-                        "label" => $this->trans("API URL", [], "Modules.Shkeeper.Shop"),
+                        "label" => $this->trans("API URL", [], "Modules.Shkeeper.Admin"),
                         "name" => "SHKEEPER_APIURL",
                         "desc" => "API URL",
                         "required" => true,
                     ],
                 ],
                 "submit" => [
-                    "title" => $this->trans("Save", [], "Modules.Shkeeper.Shop"),
+                    "title" => $this->trans("Save", [], "Modules.Shkeeper.Admin"),
                     "class" => "btn btn-default pull-right",
                 ],
             ],
@@ -131,4 +131,14 @@ class Shkeeper extends PaymentModule
 
         return $helper->generateForm([$form]);
     }
+
+    /**
+     * Summary of isUsingNewTranslationSystem
+     * @return bool
+     */
+    public function isUsingNewTranslationSystem()
+    {
+        return true;
+    }
+
 }
