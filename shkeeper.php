@@ -37,9 +37,12 @@ class Shkeeper extends PaymentModule
         if (Shop::isFeatureActive()) {
             Shop::setContext(Shop::CONTEXT_ALL);
         }
-        
+
+        // register payment hooks        
         return (
-            parent::install() 
+            parent::install()
+            && $this->registerHook('PaymentOptions')
+            // && $this->registerHook('PaymentReturn')
             && Configuration::updateValue('MYMODULE_NAME', 'my module')
         ); 
     }
@@ -139,6 +142,29 @@ class Shkeeper extends PaymentModule
     public function isUsingNewTranslationSystem()
     {
         return true;
+    }
+
+    public function hookPaymentOptions()
+    {
+        if (! $this->active ) {
+            return;
+        }
+
+        $paymetnOptions = [
+            $this->getShkeeperOptions(),
+        ];
+
+        return $paymetnOptions;
+    }
+
+    public function getShkeeperOptions() 
+    {
+        $shkeeper = new PaymentOption();
+        $shkeeper->setModuleName($this->name);
+        $shkeeper->setCallToActionText($this->trans('Pay with crypto', [], 'Module.Shkeeper.Shop'));
+        
+        $shkeeper->setAction($this->context->link->getModuleLink($this->name, 'validation', [], true));
+        $shkeeper->setAdditionalInformation($this->fetch('module:shkeeper/views/templates/hook/payment.html.twig'));
     }
 
 }

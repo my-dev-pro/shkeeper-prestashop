@@ -1,0 +1,9 @@
+{% extends 'page.tpl' %}
+
+{% block content %}
+    <h1>{{ 'Payment'|trans }}</h1>
+    <div class="payment-container">
+        <p>{{ 'Scan the QR code to pay'|trans }}</p>
+        <img src="{{ qr_code_url }}" alt="QR Code">
+    </div>
+{% endblock %}
