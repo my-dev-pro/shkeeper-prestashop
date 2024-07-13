@@ -1,4 +1,7 @@
 <?php
+/**
+ * @author MY-Dev <mydev@my-dev.pro>
+ */
 
 // disable loading outside prestashop
 if (!defined("_PS_VERSION_")) {
@@ -43,7 +46,7 @@ class Shkeeper extends PaymentModule
             parent::install()
             && $this->registerHook('PaymentOptions')
             // && $this->registerHook('PaymentReturn')
-            && Configuration::updateValue('MYMODULE_NAME', 'my module')
+            && Configuration::updateValue('SHKEEPER', 'shkeeper')
         ); 
     }
 
@@ -60,6 +63,10 @@ class Shkeeper extends PaymentModule
             $configInstruction = (string) Tools::getValue("SHKEEPER_INSTRUCTION");
             $configKey = Tools::getValue("SHKEEPER_APIKEY");
             $configURL = Tools::getValue("SHKEEPER_APIURL");
+
+            // auto validate the URL
+            $configURL = $this->addURLSchema($configURL);
+            $configURL = $this->addURLSeparator($configURL);
 
             // check that the value is valid
             if (empty($configKey) || empty($configURL)) {
@@ -165,6 +172,37 @@ class Shkeeper extends PaymentModule
         
         $shkeeper->setAction($this->context->link->getModuleLink($this->name, 'validation', [], true));
         $shkeeper->setAdditionalInformation($this->fetch('module:shkeeper/views/templates/hook/payment.html.twig'));
+    }
+
+    /**
+     * Summary of addURLSeparator
+     * Validate adding separetor directory at the end of the link
+     * @param string $url
+     * @return string
+     */
+    public function addURLSeparator(string $url): string
+    {
+        if (!str_ends_with($url, '/')) {
+            return $url .= DIRECTORY_SEPARATOR;
+        }
+
+        return $url;
+    }
+
+    /**
+     * Summary of addURLSchema
+     * Validate adding schema at the start of the link
+     * @param string $url
+     * @return string
+     */
+    public function addURLSchema(string $url): string
+    {
+        if (!str_contains($url, 'http'))
+        {
+            return 'https://' . $url;
+        }
+
+        return $url;
     }
 
 }

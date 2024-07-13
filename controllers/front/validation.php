@@ -1,4 +1,8 @@
 <?php
+/**
+ * @author MY-Dev <mydev@my-dev.pro>
+ */
+
 class ShkeeperValidationModuleFrontController extends ModuleFrontController
 {
     public function postProcess()
