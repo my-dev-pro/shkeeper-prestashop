@@ -143,7 +143,7 @@ class Shkeeper extends PaymentModule
     }
 
     /**
-     * Summary of isUsingNewTranslationSystem
+     * Enable translator at backoffice
      * @return bool
      */
     public function isUsingNewTranslationSystem()
@@ -175,7 +175,6 @@ class Shkeeper extends PaymentModule
     }
 
     /**
-     * Summary of addURLSeparator
      * Validate adding separetor directory at the end of the link
      * @param string $url
      * @return string
@@ -190,7 +189,6 @@ class Shkeeper extends PaymentModule
     }
 
     /**
-     * Summary of addURLSchema
      * Validate adding schema at the start of the link
      * @param string $url
      * @return string
