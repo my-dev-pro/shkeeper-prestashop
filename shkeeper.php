@@ -45,6 +45,7 @@ class Shkeeper extends PaymentModule
         return (
             parent::install()
             && $this->registerHook('PaymentOptions')
+            && $this->registerHook('displayHeader')
             // && $this->registerHook('PaymentReturn')
             && Configuration::updateValue('SHKEEPER', 'shkeeper')
         ); 
@@ -151,11 +152,21 @@ class Shkeeper extends PaymentModule
         return true;
     }
 
+    public function hookDisplayHeader()
+    {
+        $this->context->controller->registerJavascript('shkeeper-js', 'modules/' . $this->name . '/views/js/shkeeper.js', [
+            'position' => 'bottom',
+        ]);
+    }
+
     public function hookPaymentOptions()
     {
         if (! $this->active ) {
             return;
         }
+
+        // get currencies
+        $this->smarty->assign($this->getAvailableCurrencies());
 
         $paymetnOptions = [
             $this->getShkeeperOptions(),
@@ -164,14 +175,29 @@ class Shkeeper extends PaymentModule
         return $paymetnOptions;
     }
 
+    public function getAvailableCurrencies()
+    {
+        $instructions = Configuration::get('SHKEEPER_INSTRUCTION');
+        $currencies = $this->getData('api/v1/crypto');
+
+        return [
+            'instructions' => $instructions,
+            'status' => $currencies['status'],
+            'currencies' => $currencies['crypto_list'],
+            'get_address' => $this->trans('Get address', [], 'Module.Shkeeper.Shop'),
+        ];
+    }
+
     public function getShkeeperOptions() 
     {
-        $shkeeper = new PaymentOption();
+        $shkeeper = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
         $shkeeper->setModuleName($this->name);
-        $shkeeper->setCallToActionText($this->trans('Pay with crypto', [], 'Module.Shkeeper.Shop'));
+        $shkeeper->setCallToActionText($this->trans('Pay with Cryptocurrencies', [], 'Module.Shkeeper.Shop'));
         
         $shkeeper->setAction($this->context->link->getModuleLink($this->name, 'validation', [], true));
-        $shkeeper->setAdditionalInformation($this->fetch('module:shkeeper/views/templates/hook/payment.html.twig'));
+        $shkeeper->setAdditionalInformation($this->fetch('module:shkeeper/views/templates/front/payment_info.tpl'));
+
+        return $shkeeper;
     }
 
     /**
@@ -201,6 +227,28 @@ class Shkeeper extends PaymentModule
         }
 
         return $url;
+    }
+
+    public function getData(string $url)
+    {
+        $headers = [
+            "X-Shkeeper-Api-Key: " . Configuration::get('SHKEEPER_APIKEY'),
+        ];
+
+        $base_url = Configuration::get('SHKEEPER_APIURL');
+
+        $options = [
+            CURLOPT_URL => $base_url . $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $headers,
+        ];
+
+        $curl = curl_init();
+        curl_setopt_array($curl, $options);
+        $response = curl_exec($curl);
+        curl_close($curl);
+
+        return json_decode($response, true);
     }
 
 }
