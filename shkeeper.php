@@ -185,6 +185,9 @@ class Shkeeper extends PaymentModule
             'status' => $currencies['status'],
             'currencies' => $currencies['crypto_list'],
             'get_address' => $this->trans('Get address', [], 'Module.Shkeeper.Shop'),
+            'wallet_controller' => Context::getContext()->link->getModuleLink(
+                'shkeeper', 'wallet', ['ajax' => true]
+            ),
         ];
     }
 
