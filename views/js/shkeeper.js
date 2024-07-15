@@ -1,4 +1,13 @@
+// catch post URL 
+const postURL = document.getElementById("post-url").innerText;
+
 $("#get-address").on('click', function () {
+
+    // hide empty address and amount elements
+    $('.pay-container').attr('hidden', 'hidden')
+
+    // catch selected currency
+    const currency = $('#shkeeper-currency').val()
 
     // reset current data
     $('#wallet-address').text('');
@@ -9,24 +18,36 @@ $("#get-address").on('click', function () {
     $.ajax({
         type: 'POST',
         headers: { "cache-control": "no-cache" },
-        url: carrierComparisonUrl + '?rand=' + new Date().getTime(),
-        data: 'currency=' + $('#shkeeper-currency').val(),
-        dataType: 'json',
+        url: postURL + '?currency=' + currency,
+        data: 'currency=' + currency,
+        beforeSend: function () {
+            $('#get-address').val('loading...');
+        },
+        complete: function () {
+            $('#get-address').val('Change Address')
+        },
         success: function (json) {
             console.log(json)
-            if (json.length) {
-                //
-            }
+            // add details info to elements
+            $('#wallet-address').append('' + json.wallet);
+            $('#amount').append('' + json.amount);
+            
+            // update inputs
+            $('input[name=wallet_address]').val(json.wallet)
+            $('input[name=wallet_amount]').val(json.amount)
+
+            // show address and amount elements
+            $('.pay-container').removeAttr('hidden')
+            
+            // Generate QRCode to scan
+            new QRCode(document.getElementById("qrcode"), {
+                text: json.wallet + '?amount=' + json.amount,
+                width: 128,
+                height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
         }
     });
-
-    new QRCode(document.getElementById("qrcode"), {
-        text: 'MY-Dev',
-        width: 128,
-        height: 128,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-    });
-
 });

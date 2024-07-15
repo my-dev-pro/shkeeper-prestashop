@@ -5,8 +5,13 @@ class ShkeeperValidationModuleFrontController extends ModuleFrontController
     {
         $cart = $this->context->cart;
 
-        if ($cart->id_customer == 0 || $cart->id_address_delivery == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
-            Tools::redirect('index.php?controller=order&step=1');
+        if (
+            $cart->id_customer == 0 ||
+            $cart->id_address_delivery == 0 ||
+            $cart->id_address_invoice == 0 ||
+            !$this->module->active
+        ) {
+            Tools::redirect("index.php?controller=order&step=1");
 
             return;
         }
@@ -14,51 +19,100 @@ class ShkeeperValidationModuleFrontController extends ModuleFrontController
         // Check that this payment option is still available in case the customer changed his address just before the end of the checkout process
         $authorized = false;
         foreach (Module::getPaymentModules() as $module) {
-            if ($module['name'] == 'shkeeper') {
+            if ($module["name"] == "shkeeper") {
                 $authorized = true;
                 break;
             }
         }
 
         if (!$authorized) {
-            exit($this->trans('This payment method is not available.', [], 'Modules.Shkeeper.Shop'));
+            exit(
+                $this->trans(
+                    "This payment method is not available.",
+                    [],
+                    "Modules.Shkeeper.Shop"
+                )
+            );
         }
 
         $customer = new Customer($cart->id_customer);
 
         if (!Validate::isLoadedObject($customer)) {
-            Tools::redirect('index.php?controller=order&step=1');
+            Tools::redirect("index.php?controller=order&step=1");
 
             return;
         }
 
-        $apiurl = Tools::getValue('SHKEEPER_APIURL');
+        // save address with amount required for this order
 
+        $walletAddress = $this->context->cookie->__get("shkeeper_wallet");
+        $amount = $this->context->cookie->__get("shkeeper_amount");
 
-        // Generate QR Code and return URL
-        // $amount = (float) $cart->getOrderTotal(true, Cart::BOTH);
-        // $qrCodeUrl = $this->generateQrCode($amount);
+        $currency = $this->context->currency;
+        $total = (float) $cart->getOrderTotal(true, Cart::BOTH);
 
-        $this->context->smarty->assign([
-            // 'amount' => 15,
-            // 'qr_code_url' => $qrCodeUrl,
-        ]);
+        $this->module->validateOrder(
+            $cart->id,
+            (int) Configuration::get("PS_OS_SHKEEPER_PENDING"),
+            0,
+            $this->module->displayName,
+            null,
+            [],
+            (int) $currency->id,
+            false,
+            $customer->secure_key
+        );
 
-        // $this->setTemplate('module:shkeeper/views/templates/front/payment_return.html.twig');
+        // OrderId
+        $orderId = $this->module->currentOrder;
+
+        // messages
+        $message = "Wallet: " . $this->context->cookie->__get("shkeeper_wallet") . " - ";
+        $message .= "Amount: " . $this->context->cookie->__get("shkeeper_amount");
+        
+        // save address and amout to order messages
+        $this->addOrderMessage($orderId, $message, $cart->id_customer);
+
+        Tools::redirect(
+            $this->context->link->getPageLink(
+                "order-confirmation",
+                true,
+                (int) $this->context->language->id,
+                [
+                    "id_cart" => (int) $cart->id,
+                    "id_module" => (int) $this->module->id,
+                    "id_order" => (int) $this->module->currentOrder,
+                    "key" => $customer->secure_key,
+                ]
+            )
+        );
     }
 
-    private function generateQrCode($amount)
+    private function addOrderMessage($orderId, $message, $cutomerId)
     {
-        // Generate the QR code URL using CURL
-        $data = ['amount' => $amount];
-        $ch = curl_init();
+        if (version_compare(_PS_VERSION_, "1.7.0", ">")) {
+            // Add this message in the customer thread
+            $customer_thread = new CustomerThread();
+            $customer_thread->id_contact = 0;
+            $customer_thread->id_customer = (int) $cutomerId;
+            $customer_thread->id_shop = (int) $this->context->shop->id;
+            $customer_thread->id_order = (int) $orderId;
+            $customer_thread->id_lang = (int) $this->context->language->id;
+            $customer_thread->token = Tools::passwdGen(12);
+            $customer_thread->add();
 
-        curl_setopt($ch, CURLOPT_URL, 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode(json_encode($data)));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        $qrCodeUrl = curl_exec($ch);
-
-        curl_close($ch);
-
-        return $qrCodeUrl;
+            $customer_message = new CustomerMessage();
+            $customer_message->id_customer_thread = $customer_thread->id;
+            $customer_message->id_employee = 0;
+            $customer_message->message = $message;
+            $customer_message->private = 1;
+            $customer_message->add();
+        } else {
+            $orderMessage = new Message();
+            $orderMessage->id_order = $orderId;
+            $orderMessage->message = $message;
+            $orderMessage->private = true;
+            $orderMessage->save();
+        }
     }
 }

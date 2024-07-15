@@ -2,14 +2,52 @@
 
 class ShkeeperWalletModuleFrontController extends ModuleFrontController
 {
-    public fucntion postProcess()
-    {
-        $currency = Tools::getIsset('currency');
 
-        return Tools::json_encode([
-            'currency' => $currency,
-        ]);
+    public function postProcess()
+    {
+        $cryptoCurrency = Tools::getValue('currency');
+        $cart = $this->context->cart;
+        $currency = $this->context->currency;
+
+        $order_data = [
+            "external_id"   => $cart->id,
+            "fiat"          => $currency->iso_code,
+            "amount"        => (float) $cart->getOrderTotal(true, Cart::BOTH),
+            "callback_url"  => $this->context->link->getModuleLink('shkeeper', 'callback', ['ajax' => true]),
+        ];
+
+        $walletAddress = $this->postData("api/v1/$cryptoCurrency/payment_request", $order_data);
+
+        $info = json_decode($walletAddress, true);
+        $this->context->cookie->__set('shkeeper_wallet', $info['wallet']);
+        $this->context->cookie->__set('shkeeper_amount', $info['amount']);
         
+        header("Content-Type: application/json");
+        echo $walletAddress;
         exit;
+    }
+
+    private function postData(string $url, array $data = [])
+    {
+        $headers = [
+            "X-Shkeeper-Api-Key: " . Configuration::get('SHKEEPER_APIKEY'),
+        ];
+
+        $base_url = Configuration::get('SHKEEPER_APIURL');
+
+        $options = [
+            CURLOPT_URL => $base_url . $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_POSTFIELDS => json_encode($data),
+            CURLOPT_POST => true,
+        ];
+
+        $curl = curl_init();
+        curl_setopt_array($curl, $options);
+        $response = curl_exec($curl);
+        curl_close($curl);
+
+        return $response;
     }
 }

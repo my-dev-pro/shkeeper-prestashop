@@ -10,6 +10,9 @@ if (!defined("_PS_VERSION_")) {
 
 class Shkeeper extends PaymentModule
 {
+    public array $ps_version_compliancy;
+    public bool $is_configurable;
+
     public function __construct()
     {
         $this->name = "shkeeper";
@@ -28,10 +31,22 @@ class Shkeeper extends PaymentModule
 
         parent::__construct();
 
-        $this->displayName = $this->trans("SHkeeper", [], "Modules.Shkeeper.Admin");
-        $this->description = $this->trans("SHKeeper Cryptocurrencies Payment Gateway", [], "Modules.Shkeeper.Admin");
+        $this->displayName = $this->trans(
+            "SHkeeper",
+            [],
+            "Modules.Shkeeper.Admin"
+        );
+        $this->description = $this->trans(
+            "SHKeeper Cryptocurrencies Payment Gateway",
+            [],
+            "Modules.Shkeeper.Admin"
+        );
 
-        $this->confirmUninstall = $this->trans("Are you sure you want to uninstall?", [], "Modules.Shkeeper.Admin");
+        $this->confirmUninstall = $this->trans(
+            "Are you sure you want to uninstall?",
+            [],
+            "Modules.Shkeeper.Admin"
+        );
     }
 
     public function install()
@@ -41,14 +56,24 @@ class Shkeeper extends PaymentModule
             Shop::setContext(Shop::CONTEXT_ALL);
         }
 
-        // register payment hooks        
-        return (
-            parent::install()
-            && $this->registerHook('PaymentOptions')
-            && $this->registerHook('displayHeader')
+        // register payment hooks
+        return parent::install() &&
+            $this->registerHook("PaymentOptions") &&
+            $this->registerHook("displayHeader") &&
             // && $this->registerHook('PaymentReturn')
-            && Configuration::updateValue('SHKEEPER', 'shkeeper')
-        ); 
+            Configuration::updateValue("SHKEEPER", "shkeeper") &&
+            $this->addOrderState("shkeeper");
+    }
+
+    public function uninstall()
+    {
+        // clear configuration store
+        Configuration::deleteByName("SHKEEPER");
+        Configuration::deleteByName("SHKEEPER_INSTRUCTION");
+        Configuration::deleteByName("SHKEEPER_APIKEY");
+        Configuration::deleteByName("SHKEEPER_APIURL");
+
+        return parent::uninstall();
     }
 
     /**
@@ -61,7 +86,9 @@ class Shkeeper extends PaymentModule
 
         //TODO save form values
         if (Tools::isSubmit("submit" . $this->name)) {
-            $configInstruction = (string) Tools::getValue("SHKEEPER_INSTRUCTION");
+            $configInstruction = (string) Tools::getValue(
+                "SHKEEPER_INSTRUCTION"
+            );
             $configKey = Tools::getValue("SHKEEPER_APIKEY");
             $configURL = Tools::getValue("SHKEEPER_APIURL");
 
@@ -72,13 +99,28 @@ class Shkeeper extends PaymentModule
             // check that the value is valid
             if (empty($configKey) || empty($configURL)) {
                 // invalid value, show an error
-                $output = $this->displayError( $this->trans("Invalid Configuration value", [], "Modules.Shkeeper.Admin" ) );
+                $output = $this->displayError(
+                    $this->trans(
+                        "Invalid Configuration value",
+                        [],
+                        "Modules.Shkeeper.Admin"
+                    )
+                );
             } else {
                 // value is ok, update it and display a confirmation message
-                Configuration::updateValue("SHKEEPER_INSTRUCTION", $configInstruction);
+                Configuration::updateValue(
+                    "SHKEEPER_INSTRUCTION",
+                    $configInstruction
+                );
                 Configuration::updateValue("SHKEEPER_APIKEY", $configKey);
                 Configuration::updateValue("SHKEEPER_APIURL", $configURL);
-                $output = $this->displayConfirmation( $this->trans("Settings updated", [], "Modules.Shkeeper.Admin" ) );
+                $output = $this->displayConfirmation(
+                    $this->trans(
+                        "Settings updated",
+                        [],
+                        "Modules.Shkeeper.Admin"
+                    )
+                );
             }
         }
 
@@ -96,28 +138,44 @@ class Shkeeper extends PaymentModule
                 "input" => [
                     [
                         "type" => "textarea",
-                        "label" => $this->trans("Instruction", [], "Modules.Shkeeper.Admin"),
+                        "label" => $this->trans(
+                            "Instruction",
+                            [],
+                            "Modules.Shkeeper.Admin"
+                        ),
                         "name" => "SHKEEPER_INSTRUCTION",
                         "desc" => "Instruction for Customer",
                         "required" => false,
                     ],
                     [
                         "type" => "text",
-                        "label" => $this->trans("API Key", [], "Modules.Shkeeper.Admin"),
+                        "label" => $this->trans(
+                            "API Key",
+                            [],
+                            "Modules.Shkeeper.Admin"
+                        ),
                         "name" => "SHKEEPER_APIKEY",
                         "desc" => "API Key",
                         "required" => true,
                     ],
                     [
                         "type" => "text",
-                        "label" => $this->trans("API URL", [], "Modules.Shkeeper.Admin"),
+                        "label" => $this->trans(
+                            "API URL",
+                            [],
+                            "Modules.Shkeeper.Admin"
+                        ),
                         "name" => "SHKEEPER_APIURL",
                         "desc" => "API URL",
                         "required" => true,
                     ],
                 ],
                 "submit" => [
-                    "title" => $this->trans("Save", [], "Modules.Shkeeper.Admin"),
+                    "title" => $this->trans(
+                        "Save",
+                        [],
+                        "Modules.Shkeeper.Admin"
+                    ),
                     "class" => "btn btn-default pull-right",
                 ],
             ],
@@ -129,16 +187,30 @@ class Shkeeper extends PaymentModule
         $helper->table = $this->table;
         $helper->name_controller = $this->name;
         $helper->token = Tools::getAdminTokenLite("AdminModules");
-        $helper->currentIndex = AdminController::$currentIndex . "&" . http_build_query(["configure" => $this->name]);
+        $helper->currentIndex =
+            AdminController::$currentIndex .
+            "&" .
+            http_build_query(["configure" => $this->name]);
         $helper->submit_action = "submit" . $this->name;
 
         // Default language
-        $helper->default_form_language = (int) Configuration::get( "PS_LANG_DEFAULT" );
+        $helper->default_form_language = (int) Configuration::get(
+            "PS_LANG_DEFAULT"
+        );
 
         // Load current value into the form
-        $helper->fields_value["SHKEEPER_INSTRUCTION"] = Tools::getValue( "SHKEEPER_INSTRUCTION", Configuration::get("SHKEEPER_INSTRUCTION") );
-        $helper->fields_value["SHKEEPER_APIKEY"] = Tools::getValue( "SHKEEPER_APIKEY", Configuration::get("SHKEEPER_APIKEY"));
-        $helper->fields_value["SHKEEPER_APIURL"] = Tools::getValue( "SHKEEPER_APIURL", Configuration::get("SHKEEPER_APIURL"));
+        $helper->fields_value["SHKEEPER_INSTRUCTION"] = Tools::getValue(
+            "SHKEEPER_INSTRUCTION",
+            Configuration::get("SHKEEPER_INSTRUCTION")
+        );
+        $helper->fields_value["SHKEEPER_APIKEY"] = Tools::getValue(
+            "SHKEEPER_APIKEY",
+            Configuration::get("SHKEEPER_APIKEY")
+        );
+        $helper->fields_value["SHKEEPER_APIURL"] = Tools::getValue(
+            "SHKEEPER_APIURL",
+            Configuration::get("SHKEEPER_APIURL")
+        );
 
         return $helper->generateForm([$form]);
     }
@@ -154,53 +226,95 @@ class Shkeeper extends PaymentModule
 
     public function hookDisplayHeader()
     {
-        $this->context->controller->registerJavascript('shkeeper-js', 'modules/' . $this->name . '/views/js/shkeeper.js', [
-            'position' => 'bottom',
-        ]);
+        $this->context->controller->registerJavascript(
+            "shkeeper-js",
+            "modules/" . $this->name . "/views/js/shkeeper.js",
+            [
+                "position" => "bottom",
+            ]
+        );
     }
 
     public function hookPaymentOptions()
     {
-        if (! $this->active ) {
+        if (!$this->active) {
+            return;
+        }
+
+        if (
+            !Configuration::get("SHKEEPER_APIKEY") ||
+            !Configuration::get("SHKEEPER_APIURL")
+        ) {
             return;
         }
 
         // get currencies
         $this->smarty->assign($this->getAvailableCurrencies());
 
-        $paymetnOptions = [
-            $this->getShkeeperOptions(),
-        ];
+        $paymetnOptions = [$this->getShkeeperOptions()];
 
         return $paymetnOptions;
     }
 
-    public function getAvailableCurrencies()
-    {
-        $instructions = Configuration::get('SHKEEPER_INSTRUCTION');
-        $currencies = $this->getData('api/v1/crypto');
-
-        return [
-            'instructions' => $instructions,
-            'status' => $currencies['status'],
-            'currencies' => $currencies['crypto_list'],
-            'get_address' => $this->trans('Get address', [], 'Module.Shkeeper.Shop'),
-            'wallet_controller' => Context::getContext()->link->getModuleLink(
-                'shkeeper', 'wallet', ['ajax' => true]
-            ),
-        ];
-    }
-
-    public function getShkeeperOptions() 
+    public function getShkeeperOptions()
     {
         $shkeeper = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
         $shkeeper->setModuleName($this->name);
-        $shkeeper->setCallToActionText($this->trans('Pay with Cryptocurrencies', [], 'Module.Shkeeper.Shop'));
-        
-        $shkeeper->setAction($this->context->link->getModuleLink($this->name, 'validation', [], true));
-        $shkeeper->setAdditionalInformation($this->fetch('module:shkeeper/views/templates/front/payment_info.tpl'));
+        $shkeeper->setCallToActionText(
+            $this->trans(
+                "Pay with Cryptocurrencies",
+                [],
+                "Module.Shkeeper.Shop"
+            )
+        );
+
+        $shkeeper->setAction(
+            $this->context->link->getModuleLink(
+                $this->name,
+                "validation",
+                [],
+                true
+            )
+        );
+        $shkeeper->setAdditionalInformation(
+            $this->fetch(
+                "module:shkeeper/views/templates/front/payment_info.tpl"
+            )
+        );
 
         return $shkeeper;
+    }
+
+    private function getAvailableCurrencies()
+    {
+        $instructions = Configuration::get("SHKEEPER_INSTRUCTION");
+        $currencies = $this->getData("api/v1/crypto");
+
+        return [
+            "instructions" => $instructions,
+            "status" => $currencies["status"],
+            "currencies" => $currencies["crypto_list"],
+            "wallet_controller" => Context::getContext()->link->getModuleLink(
+                "shkeeper",
+                "wallet",
+                ["ajax" => true]
+            ),
+            "entry_request_address" => $this->trans(
+                "Get address",
+                [],
+                "Module.Shkeeper.Shop"
+            ),
+            "entry_address" => $this->trans(
+                "Wallet Address",
+                [],
+                "Module.Shkeeper.Shop"
+            ),
+            "entry_amount" => $this->trans(
+                "Amount",
+                [],
+                "Module.Shkeeper.Shop"
+            ),
+        ];
     }
 
     /**
@@ -208,9 +322,9 @@ class Shkeeper extends PaymentModule
      * @param string $url
      * @return string
      */
-    public function addURLSeparator(string $url): string
+    private function addURLSeparator(string $url): string
     {
-        if (!str_ends_with($url, '/')) {
+        if (!str_ends_with($url, "/")) {
             return $url .= DIRECTORY_SEPARATOR;
         }
 
@@ -222,23 +336,22 @@ class Shkeeper extends PaymentModule
      * @param string $url
      * @return string
      */
-    public function addURLSchema(string $url): string
+    private function addURLSchema(string $url): string
     {
-        if (!str_contains($url, 'http'))
-        {
-            return 'https://' . $url;
+        if (!str_contains($url, "http")) {
+            return "https://" . $url;
         }
 
         return $url;
     }
 
-    public function getData(string $url)
+    private function getData(string $url)
     {
         $headers = [
-            "X-Shkeeper-Api-Key: " . Configuration::get('SHKEEPER_APIKEY'),
+            "X-Shkeeper-Api-Key: " . Configuration::get("SHKEEPER_APIKEY"),
         ];
 
-        $base_url = Configuration::get('SHKEEPER_APIURL');
+        $base_url = Configuration::get("SHKEEPER_APIURL");
 
         $options = [
             CURLOPT_URL => $base_url . $url,
@@ -254,4 +367,72 @@ class Shkeeper extends PaymentModule
         return json_decode($response, true);
     }
 
+    private function addOrderState(string $moduleName)
+    {
+        // If the state does not exist, we create it.
+        if (!Configuration::get("PS_OS_SHKEEPER_PENDING")) {
+            // create new order state
+            $orderState = new OrderState();
+            $orderState->color = "#52add7";
+            $orderState->send_email = false;
+            $orderState->module_name = $moduleName;
+            $orderState->unremovable = true;
+            $orderState->logable = false;
+            $orderState->name = [];
+            $languages = Language::getLanguages();
+
+            foreach ($languages as $language) {
+                $orderState->name[$language["id_lang"]] = $this->trans(
+                    "Awaiting SHKeeper payment",
+                    [],
+                    "Modules.Shkeeper.Admin"
+                );
+            }
+
+            // save new order state
+            $orderState->add();
+
+            Configuration::updateValue(
+                "PS_OS_SHKEEPER_PENDING",
+                (int) $orderState->id
+            );
+        }
+
+        if (!Configuration::get("PS_OS_SHKEEPER_ACCEPTED")) {
+            // create new order state
+            $orderState = new OrderState();
+            $orderState->color = "#52add7";
+            $orderState->send_email = false;
+            $orderState->module_name = $moduleName;
+            $orderState->unremovable = true;
+            $orderState->logable = true;
+            $orderState->name = [];
+            $languages = Language::getLanguages();
+
+            foreach ($languages as $language) {
+                $orderState->name[$language["id_lang"]] = $this->trans(
+                    "Accepted SHKeeper payment",
+                    [],
+                    "Modules.Shkeeper.Admin"
+                );
+            }
+
+            // save new order state
+            $orderState->add();
+
+            Configuration::updateValue(
+                "PS_OS_SHKEEPER_ACCEPTED",
+                (int) $orderState->id
+            );
+        }
+
+        if (
+            Configuration::get("PS_OS_SHKEEPER_PENDING") &&
+            Configuration::get("PS_OS_SHKEEPER_ACCEPTED")
+        ) {
+            return true;
+        }
+
+        return false;
+    }
 }
