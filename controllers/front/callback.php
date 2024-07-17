@@ -9,15 +9,6 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
         $data = file_get_contents('php://input');
         $headers = getallheaders();
 
-        // var_dump(apache_request_headers());
-        // print_r(json_decode($data, true));
-        // print_r($headers);
-
-        // exit;
-
-        // add transactions 
-        // when complete payment update order status with "PS_OS_SHKEEPER_ACCEPTED"
-
         $message = null;
 
         // validate if the request singned by SHKeeper API
@@ -66,7 +57,8 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
             }
             
         }
-
+        
+        // when complete payment update order status with "PS_OS_SHKEEPER_ACCEPTED"
         if ($data_collected['paid']) {
             $newOrderStatus = Configuration::get('PS_OS_PAYMENT');
             if (Configuration::get('PS_OS_SHKEEPER_ACCEPTED')) {
