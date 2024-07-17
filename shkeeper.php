@@ -401,7 +401,7 @@ class Shkeeper extends PaymentModule
         if (!Configuration::get("PS_OS_SHKEEPER_ACCEPTED")) {
             // create new order state
             $orderState = new OrderState();
-            $orderState->color = "#52add7";
+            $orderState->color = "#F4BB44";
             $orderState->send_email = false;
             $orderState->module_name = $moduleName;
             $orderState->unremovable = true;
@@ -426,10 +426,7 @@ class Shkeeper extends PaymentModule
             );
         }
 
-        if (
-            Configuration::get("PS_OS_SHKEEPER_PENDING") &&
-            Configuration::get("PS_OS_SHKEEPER_ACCEPTED")
-        ) {
+        if (Configuration::get("PS_OS_SHKEEPER_PENDING") && Configuration::get("PS_OS_SHKEEPER_ACCEPTED")) {
             return true;
         }
 

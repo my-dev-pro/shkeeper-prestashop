@@ -6,6 +6,11 @@ class ShkeeperWalletModuleFrontController extends ModuleFrontController
     public function postProcess()
     {
         $cryptoCurrency = Tools::getValue('currency');
+
+        if (empty($cryptoCurrency)) {
+            return false;
+        }
+
         $cart = $this->context->cart;
         $currency = $this->context->currency;
 
