@@ -27,7 +27,6 @@ $("#get-address").on('click', function () {
             $('#get-address').val('Change Address')
         },
         success: function (json) {
-            console.log(json)
             // add details info to elements
             $('#wallet-address').append('' + json.wallet);
             $('#amount').append('' + json.amount + ' <strong>' + json.display_name + '</strong>');
