@@ -30,7 +30,7 @@ $("#get-address").on('click', function () {
             console.log(json)
             // add details info to elements
             $('#wallet-address').append('' + json.wallet);
-            $('#amount').append('' + json.amount);
+            $('#amount').append('' + json.amount + ' <strong>' + json.display_name + '</strong>');
             
             // update inputs
             $('input[name=wallet_address]').val(json.wallet)

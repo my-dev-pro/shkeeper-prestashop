@@ -262,7 +262,7 @@ class Shkeeper extends PaymentModule
         $shkeeper->setModuleName($this->name);
         $shkeeper->setCallToActionText(
             $this->trans(
-                "Pay with Cryptocurrencies",
+                "Pay with SHKeeper",
                 [],
                 "Module.Shkeeper.Shop"
             )
@@ -383,7 +383,7 @@ class Shkeeper extends PaymentModule
 
             foreach ($languages as $language) {
                 $orderState->name[$language["id_lang"]] = $this->trans(
-                    "Awaiting SHKeeper payment",
+                    "SHKeeper Awaiting payment",
                     [],
                     "Modules.Shkeeper.Admin"
                 );
@@ -398,7 +398,7 @@ class Shkeeper extends PaymentModule
             );
         }
 
-        if (!Configuration::get("PS_OS_SHKEEPER_ACCEPTED")) {
+        if (!Configuration::get("PS_OS_SHKEEPER_PARTIAL_PAYMENT")) {
             // create new order state
             $orderState = new OrderState();
             $orderState->color = "#F4BB44";
@@ -411,7 +411,35 @@ class Shkeeper extends PaymentModule
 
             foreach ($languages as $language) {
                 $orderState->name[$language["id_lang"]] = $this->trans(
-                    "Accepted SHKeeper payment",
+                    "SHKeeper Partial Payment Received",
+                    [],
+                    "Modules.Shkeeper.Admin"
+                );
+            }
+
+            // save new order state
+            $orderState->add();
+
+            Configuration::updateValue(
+                "PS_OS_SHKEEPER_PARTIAL_PAYMENT",
+                (int) $orderState->id
+            );
+        }
+
+        if (!Configuration::get("PS_OS_SHKEEPER_ACCEPTED")) {
+            // create new order state
+            $orderState = new OrderState();
+            $orderState->color = "#88D66C";
+            $orderState->send_email = false;
+            $orderState->module_name = $moduleName;
+            $orderState->unremovable = true;
+            $orderState->logable = true;
+            $orderState->name = [];
+            $languages = Language::getLanguages();
+
+            foreach ($languages as $language) {
+                $orderState->name[$language["id_lang"]] = $this->trans(
+                    "SHKeeper Accepted Payment",
                     [],
                     "Modules.Shkeeper.Admin"
                 );
@@ -426,7 +454,7 @@ class Shkeeper extends PaymentModule
             );
         }
 
-        if (Configuration::get("PS_OS_SHKEEPER_PENDING") && Configuration::get("PS_OS_SHKEEPER_ACCEPTED")) {
+        if (Configuration::get("PS_OS_SHKEEPER_PENDING") && Configuration::get("PS_OS_SHKEEPER_PARTIAL_PAYMENT") && Configuration::get("PS_OS_SHKEEPER_ACCEPTED")) {
             return true;
         }
 

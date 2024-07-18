@@ -55,9 +55,18 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
                     $order->addOrderPayment($orderPayment->amount, $orderPayment->payment_method, $orderPayment->transaction_id);
                 }
             }
-            
         }
         
+        // when partial payment update order status with "PS_OS_SHKEEPER_PARTIAL_PAYMENT"
+        if (!$data_collected['paid']) {
+            $newOrderStatus = Configuration::get('PS_OS_PAYMENT');
+            if (Configuration::get('PS_OS_SHKEEPER_PARTIAL_PAYMENT')) {
+                $newOrderStatus = Configuration::get('PS_OS_SHKEEPER_PARTIAL_PAYMENT');
+            }
+            $order->setCurrentState($newOrderStatus);
+            $order->save();
+        }
+
         // when complete payment update order status with "PS_OS_SHKEEPER_ACCEPTED"
         if ($data_collected['paid']) {
             $newOrderStatus = Configuration::get('PS_OS_PAYMENT');
@@ -89,7 +98,7 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
         }
 
         // terminate on SHKeeper NOT SET
-        if (empty($header['X-Shkeeper-API-Key'])) {
+        if (empty($header['X-Shkeeper-Api-Key'])) {
             return false;
         }
 
@@ -97,7 +106,7 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
         $shkeeperKey = Configuration::get('SHKEEPER_APIKEY');
 
         // terminate on missy requests
-        if ($shkeeperKey != $header['X-Shkeeper-API-Key']) {
+        if ($shkeeperKey != $header['X-Shkeeper-Api-Key']) {
             return false;
         }
 
