@@ -45,7 +45,7 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
                 $orderPayment->order_reference = $orderId;
                 $orderPayment->id_currency = $order->id_currency;
                 $orderPayment->amount = (float)$transaction['amount_fiat'];
-                $orderPayment->payment_method = $this->module->name;
+                $orderPayment->payment_method = $this->module->name . ' ' . $transaction['crypto'];
                 $orderPayment->transaction_id = $transaction['txid'];
                 $orderPayment->date_add = date('Y-m-d H:i:s');
 
