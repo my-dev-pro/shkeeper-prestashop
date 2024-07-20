@@ -31,10 +31,18 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
 
         // terminate on Order Not Found
         if (! $orderId) {
+            $transactionDate = $data_collected['transactions'][0]['date'];
+
+            // Stop receive confirmation for missing orders
+            if ($this->getInterval($transactionDate)) {
+                $message = 'Please Contact Store Administration';
+                $this->response($message, 202);
+            }
+
             $message = 'Wrong Credentials!...';
             $this->response($message, 404);
         }
-        
+
         $order = new Order($orderId);
 
         // collect new transactions and save data on order update
@@ -111,5 +119,17 @@ class ShkeeperCallbackModuleFrontController extends ModuleFrontController
         }
 
         return true;
+    }
+
+    /**
+     * Calculate the Date interval
+     * @param string $date
+     * @return bool
+     */
+    private function getInterval(string $date): bool
+    {
+        $paymentDate = new DateTimeImmutable($date);
+        $today = new DateTimeImmutable();
+        return (bool) $paymentDate->diff($today)->format('%a');
     }
 }
